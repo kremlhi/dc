@@ -1,0 +1,5 @@
+#!/bin/sh
+
+path=`dirname "$@"`
+
+erl -noshell -pa "$path" -run dc intr
