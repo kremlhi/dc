@@ -1,5 +1,5 @@
 #!/bin/sh
 
-path=`dirname "$@"`
+path=`dirname "$0"`
 
 erl -noshell -pa "$path" -run dc intr
