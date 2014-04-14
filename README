@@ -1,4 +1,4 @@
-An erlang implementation of the UN*X dc(1) (desktop calculator).
+An erlang implementation of the UN*X dc(1) (desk calculator).
 
 Run from a pipe:
 $ echo '2 2+f' | ./dc
@@ -7,19 +7,19 @@ Run interactively:
 $ ./dc
 
 From an erlang shell (the first 10 numbers in the fibonacci sequence):
-1> {St,D} = dc:eval("[sasb lbla lbla+]sf 0 1[lfx z10>l]slllx"), ok.
+1> {St,D} = dc:eval("[sbsa lalb lalb+]sf 0 1[lfx z10>l]slllx"), ok.
 ok
 2> St.
 [34,21,13,8,5,3,2,1,1,0]
 3> dict:to_list(D).
 [{"b","\r"},
  {"l",["lfx z10>l"]},
- {"f",["sasb lbla lbla+"]},
+ {"f",["sbsa lalb lalb+"]},
  {"a",[21]}]
 4>
 
 Operators implemented:
-+, -, *, /, %, _, ^, v, c, d, r, e, q, p, f, z, x
++, -, *, /, %, _, ^, v, c, d, r, q, Q, p, f, z, x
 <r, =r, >r, sr, lr, Sr, Lr
 
 Push a string to the stack:

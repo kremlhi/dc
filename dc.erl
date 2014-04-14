@@ -22,35 +22,35 @@ evalop("v", {[X | T],D}) -> {[math:pow(X, 0.5) | T],D};
 evalop("c", {_,D}) -> {[],D};
 evalop("d", {[X | T],D}) -> {[X, X | T],D};
 evalop("r", {[Y, X | T],D}) -> {[X, Y | T],D};
-evalop("e", {St,D}) -> {[lists:sum(St)],D};
-evalop("q", _) -> init:stop();
-evalop("p", {[H | T],D}) ->
-    print([H]),
-    {[H | T],D};
+evalop("q", _) -> halt();
+evalop("Q", {[X | _],_}) -> halt(X);
+evalop("p", {[X | T],D}) ->
+    print([X]),
+    {[X | T],D};
 evalop("f", {St,D}) ->
     print(St),
     {St,D};
 evalop("z", {St,D}) -> {[length(St) | St],D};
-evalop("x", {[H | T],D}) ->
-    eval(H, {T,D});
-evalop([$<, Reg], {[Y, X | T],D}) ->
+evalop("x", {[X | T],D}) ->
+    eval(X, {T,D});
+evalop([$< | Reg], {[Y, X | T],D}) ->
     condi(Y < X, Reg, {T,D});
-evalop([$=, Reg], {[Y, X | T],D}) ->
+evalop([$= | Reg], {[Y, X | T],D}) ->
     condi(Y = X, Reg, {T,D});
-evalop([$>, Reg], {[Y, X | T],D}) ->
+evalop([$> | Reg], {[Y, X | T],D}) ->
     condi(Y > X, Reg, {T,D});
-evalop([$s, Reg], {[H | T],D}) ->
-    {ok,V} = case dict:find([Reg], D) of
+evalop([$s | Reg], {[X | T],D}) ->
+    {ok,V} = case dict:find(Reg, D) of
                  error -> {ok,[undefined]};
                  X -> X end,
-    {T,dict:store([Reg], [H | tl(V)], D)};
-evalop([$S, Reg], {[H | T],D}) ->
-    {T,dict:append([Reg], H, D)};
-evalop([$l, Reg], {St,D}) ->
-    {[hd(dict:fetch([Reg], D)) | St],D};
-evalop([$L, Reg], {St,D}) ->
-    L = dict:fetch([Reg], D),
-    {[hd(L) | St],dict:store([Reg], tl(L), D)};
+    {T,dict:store(Reg, [X | tl(V)], D)};
+evalop([$S | Reg], {[X | T],D}) ->
+    {T,dict:append(Reg, X, D)};
+evalop([$l | Reg], {St,D}) ->
+    {[hd(dict:fetch(Reg, D)) | St],D};
+evalop([$L | Reg], {St,D}) ->
+    [H | T] = dict:fetch(Reg, D),
+    {[H | St],dict:store(Reg, T, D)};
 evalop(S = [$[ | _], {St,D}) ->
     {[data(S) | St],D};
 evalop(N, {St,D}) when is_integer(N); is_float(N) ->
@@ -70,7 +70,7 @@ data([$[ | T]) ->
     S.
 
 condi(true, Reg, Xs) ->
-    eval([$l, Reg | "x"], Xs);
+    eval([$l | Reg] ++ "x", Xs);
 condi(false, _, Xs) ->
     Xs.
 
@@ -94,7 +94,7 @@ tokens([H | T]) ->
 brackets([$[ | T], N, Acc) ->
     brackets(T, N + 1, [$[ | Acc]);
 brackets([$] | T], 1, Acc) ->
-    {lists:reverse([$] | Acc]), T};
+    {lists:reverse([$] | Acc]),T};
 brackets([$] | T], N, Acc) ->
     brackets(T, N - 1, [$] | Acc]);
 brackets([X | T], N, Acc) ->
@@ -105,8 +105,7 @@ intr() ->
 
 intr(St) ->
     case io:get_line("") of
-        eof ->
-            init:stop();
+        eof -> halt();
         S -> St1 = lists:foldl(fun pokemon_evalop/2, St, tokens(S)),
              intr(St1) end.
 
@@ -117,10 +116,12 @@ pokemon_evalop(X, Xs) ->
             Xs end.
 
 test() ->
-    {St1,_} = eval("10[1-dd0<a]salax"),
-    St1 = [0 | lists:seq(0, 9)],
-    
-    {St2,_} = eval("[sasb lbla lbla+]sf 0 1[lfx z10>l]slllx"),
+    {St1,_} = eval("10[1-dd0<a]salax sb"),
+    St1 = lists:seq(0, 9),
+
+    {St2,_} = eval("[sbsa lalb lalb+]sf 0 1[lfx z10>l]slllx"),
     St2 = [34, 21, 13, 8, 5, 3, 2, 1, 1, 0],
-    
-    ok. 
+
+    {St3,_} = eval("[la1+dsa*dla10>y]sy 0sa1 lyx sa"),
+    St3 = [3628800, 362880, 40320, 5040, 720, 120, 24, 6, 2, 1],
+    ok.
