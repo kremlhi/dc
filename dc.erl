@@ -36,13 +36,13 @@ evalop("x", {[X | T],D}) ->
 evalop([$< | Reg], {[Y, X | T],D}) ->
     condi(Y < X, Reg, {T,D});
 evalop([$= | Reg], {[Y, X | T],D}) ->
-    condi(Y = X, Reg, {T,D});
+    condi(Y == X, Reg, {T,D});
 evalop([$> | Reg], {[Y, X | T],D}) ->
     condi(Y > X, Reg, {T,D});
 evalop([$s | Reg], {[X | T],D}) ->
     {ok,V} = case dict:find(Reg, D) of
                  error -> {ok,[undefined]};
-                 X -> X end,
+                 X1 -> X1 end,
     {T,dict:store(Reg, [X | tl(V)], D)};
 evalop([$S | Reg], {[X | T],D}) ->
     {T,dict:append(Reg, X, D)};
@@ -52,7 +52,7 @@ evalop([$L | Reg], {St,D}) ->
     [H | T] = dict:fetch(Reg, D),
     {[H | St],dict:store(Reg, T, D)};
 evalop(S = [$[ | _], {St,D}) ->
-    {[data(S) | St],D};
+    {[remove_brackets(S) | St],D};
 evalop(N, {St,D}) when is_integer(N); is_float(N) ->
     {[N | St],D}.
 
@@ -65,12 +65,12 @@ print([H | T]) ->
     io:format("~w~n", [H]),
     print(T).
 
-data([$[ | T]) ->
+remove_brackets([$[ | T]) ->
     {S,"]"} = lists:split(length(T) - 1, T),
     S.
 
 condi(true, Reg, Xs) ->
-    eval([$l | Reg] ++ "x", Xs);
+    eval("l" ++ Reg ++ "x", Xs);
 condi(false, _, Xs) ->
     Xs.
 
@@ -84,21 +84,21 @@ tokens(L = [H | _]) when H >= $0, H =< $9 ->
 tokens([H | T]) when ?is_ws(H) ->
     tokens(T);
 tokens(L = [$[ | _]) ->
-    {S,T} = brackets(L, 0, []),
+    {S,T} = split_brackets(L, 0, []),
     [S | tokens(T)];
 tokens([H, Reg | T]) when ?is_regop(H) ->
     [[H, Reg] | tokens(T)];
 tokens([H | T]) ->   
     [[H] | tokens(T)].
 
-brackets([$[ | T], N, Acc) ->
-    brackets(T, N + 1, [$[ | Acc]);
-brackets([$] | T], 1, Acc) ->
+split_brackets([$[ | T], N, Acc) ->
+    split_brackets(T, N + 1, [$[ | Acc]);
+split_brackets([$] | T], 1, Acc) ->
     {lists:reverse([$] | Acc]),T};
-brackets([$] | T], N, Acc) ->
-    brackets(T, N - 1, [$] | Acc]);
-brackets([X | T], N, Acc) ->
-    brackets(T, N, [X | Acc]).
+split_brackets([$] | T], N, Acc) ->
+    split_brackets(T, N - 1, [$] | Acc]);
+split_brackets([X | T], N, Acc) ->
+    split_brackets(T, N, [X | Acc]).
 
 intr() ->
     intr({[],dict:new()}).
