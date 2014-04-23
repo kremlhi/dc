@@ -28,7 +28,9 @@ eval(S, State) ->
     lists:foldl(fun evalop/2, State, tokens(S)).
 
 
--spec evalop(nonempty_string(), state()) -> state().
+-spec evalop(Cmd | Value, state()) -> state() when
+      Cmd :: nonempty_string(),
+      Value :: element().
 
 evalop("+", {[Y, X | T],D}) -> {[X + Y | T],D};
 evalop("-", {[Y, X | T],D}) -> {[X - Y | T],D};
