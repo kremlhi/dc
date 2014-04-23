@@ -2,7 +2,9 @@
 
 -export([eval/1, eval/2, evalop/2, tokens/1, intr/0, test/0]).
 
--define(is_regop(X), X == $s; X == $l; X == $L; X == $<; X == $=; X == $>).
+-define(is_regop(X),
+        X == $s; X == $S; X == $l; X == $L;
+        X == $<; X == $=; X == $>).
 -define(is_ws(X), X == $\t; X == $\n; X == $\r; X == $\s).
             
 eval(S) ->
@@ -123,5 +125,10 @@ test() ->
     
     {St4,_} = eval("1saLasa"),
     St4 = [],
+    
+    {St5,_} = eval("zdslsn[Saz0<x]sxlxx"
+                   " [LaSb lld1-sl 1<y]sylyx"
+                   " [Lb lnd1-sn 1<z]szlzx", {St1,dict:new()}),
+    St5 = lists:seq(9, 0, -1),
     
     ok.
