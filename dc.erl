@@ -25,10 +25,10 @@ evalop("r", {[Y, X | T],D}) -> {[X, Y | T],D};
 evalop("q", _) -> halt();
 evalop("Q", {[X | _],_}) -> halt(X);
 evalop("p", {[X | T],D}) ->
-    print([X]),
+    print(X),
     {[X | T],D};
 evalop("f", {St,D}) ->
-    print(St),
+    [print(X) || X <- St],
     {St,D};
 evalop("z", {St,D}) -> {[length(St) | St],D};
 evalop("x", {[X | T],D}) ->
@@ -40,10 +40,10 @@ evalop([$= | Reg], {[Y, X | T],D}) ->
 evalop([$> | Reg], {[Y, X | T],D}) ->
     condi(Y > X, Reg, {T,D});
 evalop([$s | Reg], {[X | T],D}) ->
-    {ok,V} = case dict:find(Reg, D) of
-                 error -> {ok,[undefined]};
-                 X1 -> X1 end,
-    {T,dict:store(Reg, [X | tl(V)], D)};
+    St1 = case dict:find(Reg, D) of
+              {ok,[_ | T1]} -> T1;
+              _ -> [] end,
+    {T,dict:store(Reg, [X | St1], D)};
 evalop([$S | Reg], {[X | T],D}) ->
     {T,dict:append(Reg, X, D)};
 evalop([$l | Reg], {St,D}) ->
@@ -56,14 +56,10 @@ evalop(S = [$[ | _], {St,D}) ->
 evalop(N, {St,D}) when is_integer(N); is_float(N) ->
     {[N | St],D}.
 
-print([]) ->
-    ok;
-print([H | T]) when H == ""; is_integer(hd(H)) ->
-    io:format("~s~n", [H]),
-    print(T);
-print([H | T]) ->
-    io:format("~w~n", [H]),
-    print(T).
+print(S) when S == ""; is_integer(hd(S)) ->
+    io:format("~s~n", [S]);
+print(N) ->
+    io:format("~w~n", [N]).
 
 remove_brackets([$[ | T]) ->
     {S,"]"} = lists:split(length(T) - 1, T),
@@ -124,4 +120,8 @@ test() ->
 
     {St3,_} = eval("[la1+dsa*dla10>y]sy 0sa1 lyx sa"),
     St3 = [3628800, 362880, 40320, 5040, 720, 120, 24, 6, 2, 1],
+    
+    {St4,_} = eval("1saLasa"),
+    St4 = [],
+    
     ok.
