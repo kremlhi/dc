@@ -74,7 +74,7 @@ evalop([$L | Reg], {St,D}) ->
     {[H | St],dict:store(Reg, T, D)};
 evalop(S = [$[ | _], {St,D}) ->
     {[remove_brackets(S) | St],D};
-evalop(N, {St,D}) when is_integer(N); is_float(N) ->
+evalop(N, {St,D}) when is_number(N) ->
     {[N | St],D}.
 
 
@@ -82,7 +82,7 @@ evalop(N, {St,D}) when is_integer(N); is_float(N) ->
 
 print(S) when S == ""; is_integer(hd(S)) ->
     io:format("~s~n", [S]);
-print(N) ->
+print(N) when is_number(N) ->
     io:format("~w~n", [N]).
 
 
