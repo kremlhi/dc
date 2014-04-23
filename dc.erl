@@ -2,16 +2,33 @@
 
 -export([eval/1, eval/2, evalop/2, tokens/1, intr/0, test/0]).
 
+
 -define(is_regop(X),
         X == $s; X == $S; X == $l; X == $L;
         X == $<; X == $=; X == $>).
+
 -define(is_ws(X), X == $\t; X == $\n; X == $\r; X == $\s).
-            
+
+
+-type element() :: string() | number().
+
+-type stack() :: [element()].
+
+-type state() :: {stack(),dict()}.
+
+
+-spec eval(string()) -> state().
+
 eval(S) ->
     eval(S, {[],dict:new()}).
 
-eval(S, St) ->
-    lists:foldl(fun evalop/2, St, tokens(S)).
+-spec eval(string(), state()) -> state().
+
+eval(S, State) ->
+    lists:foldl(fun evalop/2, State, tokens(S)).
+
+
+-spec evalop(nonempty_string(), state()) -> state().
 
 evalop("+", {[Y, X | T],D}) -> {[X + Y | T],D};
 evalop("-", {[Y, X | T],D}) -> {[X - Y | T],D};
@@ -24,8 +41,8 @@ evalop("v", {[X | T],D}) -> {[math:pow(X, 0.5) | T],D};
 evalop("c", {_,D}) -> {[],D};
 evalop("d", {[X | T],D}) -> {[X, X | T],D};
 evalop("r", {[Y, X | T],D}) -> {[X, Y | T],D};
-evalop("q", _) -> halt();
-evalop("Q", {[X | _],_}) -> halt(X);
+evalop("q", _) -> erlang:halt();
+evalop("Q", {[X | _],_}) -> erlang:halt(X);
 evalop("p", {[X | T],D}) ->
     print(X),
     {[X | T],D};
@@ -58,21 +75,33 @@ evalop(S = [$[ | _], {St,D}) ->
 evalop(N, {St,D}) when is_integer(N); is_float(N) ->
     {[N | St],D}.
 
+
+-spec print(string() | number()) -> ok.
+
 print(S) when S == ""; is_integer(hd(S)) ->
     io:format("~s~n", [S]);
 print(N) ->
     io:format("~w~n", [N]).
 
+
+-spec remove_brackets(nonempty_string()) -> string().
+
 remove_brackets([$[ | T]) ->
     {S,"]"} = lists:split(length(T) - 1, T),
     S.
 
-condi(true, Reg, Xs) ->
-    eval("l" ++ Reg ++ "x", Xs);
-condi(false, _, Xs) ->
-    Xs.
 
-tokens([]) -> [];
+-spec condi(boolean(), nonempty_string(), state()) -> state().
+
+condi(true, Reg, State) ->
+    eval("l" ++ Reg ++ "x", State);
+condi(false, _, State) ->
+    State.
+
+
+-spec tokens(string()) -> [element()].
+
+tokens("") -> "";
 tokens(L = [H | _]) when H >= $0, H =< $9 ->
     {N,T} = case string:to_float(L) of
                 {error,no_float} ->
@@ -89,6 +118,12 @@ tokens([H, Reg | T]) when ?is_regop(H) ->
 tokens([H | T]) ->   
     [[H] | tokens(T)].
 
+
+-spec split_brackets(string(), non_neg_integer(), string()) -> Tuple when
+      Tuple :: {string(),string()}.
+
+split_brackets(S, N, Acc) when N < 0 ->
+    erlang:error(badarg, [S, N, Acc]);
 split_brackets([$[ | T], N, Acc) ->
     split_brackets(T, N + 1, [$[ | Acc]);
 split_brackets([$] | T], 1, Acc) ->
@@ -98,20 +133,29 @@ split_brackets([$] | T], N, Acc) ->
 split_brackets([X | T], N, Acc) ->
     split_brackets(T, N, [X | Acc]).
 
+
+-spec intr() -> no_return().
+
 intr() ->
     intr({[],dict:new()}).
 
+-spec intr(state()) -> no_return().
+
 intr(St) ->
     case io:get_line("") of
-        eof -> halt();
+        eof -> erlang:halt();
         S -> St1 = lists:foldl(fun pokemon_evalop/2, St, tokens(S)),
              intr(St1) end.
 
-pokemon_evalop(X, Xs) ->
-    try evalop(X, Xs)
+
+-spec pokemon_evalop(string(), state()) -> state().
+
+pokemon_evalop(S, State) ->
+    try evalop(S, State)
     catch error:Reason ->
-            io:format(standard_error, "error: ~p: ~p~n", [X, Reason]),
-            Xs end.
+            io:format(standard_error, "error: ~p: ~p~n", [S, Reason]),
+            State end.
+
 
 test() ->
     {St1,_} = eval("10[1-dd0<a]salax sb"),
