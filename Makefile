@@ -1,10 +1,14 @@
 dc.beam: dc.erl
-	erlc $<
+	erlc +debug_info +warn_missing_spec $<
 
 all: dc.beam
 
-test: all
+typecheck: all
+	dialyzer -Wunmatched_returns -Werror_handling -Wrace_conditions \
+	 -Wunderspecs --src dc.erl
+
+test: typecheck
 	erl -noshell -eval 'dc:test(), halt().'
 
-typecheck: all
-	dialyzer dc.erl
+clean:
+	rm -f dc.beam

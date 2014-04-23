@@ -2,33 +2,29 @@
 
 -export([eval/1, eval/2, evalop/2, tokens/1, intr/0, test/0]).
 
-
 -define(is_regop(X),
         X == $s; X == $S; X == $l; X == $L;
         X == $<; X == $=; X == $>).
-
--define(is_ws(X), X == $\t; X == $\n; X == $\r; X == $\s).
-
+-define(is_ws(X), X == $\s; X == $\t; X == $\r; X == $\n).
 
 -type element() :: string() | number().
-
 -type stack() :: [element()].
-
 -type state() :: {stack(),dict()}.
+-type evalop_return() :: state().
+-type eval_return() :: evalop_return().
 
-
--spec eval(string()) -> state().
+-spec eval(string()) -> eval_return().
 
 eval(S) ->
     eval(S, {[],dict:new()}).
 
--spec eval(string(), state()) -> state().
+-spec eval(string(), state()) -> eval_return().
 
 eval(S, State) ->
     lists:foldl(fun evalop/2, State, tokens(S)).
 
 
--spec evalop(Cmd | Value, state()) -> state() when
+-spec evalop(Cmd | Value, state()) -> evalop_return() when
       Cmd :: nonempty_string(),
       Value :: element().
 
@@ -49,7 +45,7 @@ evalop("p", {[X | T],D}) ->
     print(X),
     {[X | T],D};
 evalop("f", {St,D}) ->
-    [print(X) || X <- St],
+    lists:foreach(fun print/1, St),
     {St,D};
 evalop("z", {St,D}) -> {[length(St) | St],D};
 evalop("x", {[X | T],D}) ->
@@ -150,7 +146,7 @@ intr(St) ->
              intr(St1) end.
 
 
--spec pokemon_evalop(string(), state()) -> state().
+-spec pokemon_evalop(string(), state()) -> evalop_return().
 
 pokemon_evalop(S, State) ->
     try evalop(S, State)
@@ -158,6 +154,8 @@ pokemon_evalop(S, State) ->
             io:format(standard_error, "error: ~p: ~p~n", [S, Reason]),
             State end.
 
+
+-spec test() -> ok.
 
 test() ->
     {St1,_} = eval("10[1-dd0<a]salax sb"),
